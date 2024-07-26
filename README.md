@@ -8,12 +8,12 @@ Déploiment d'un API Pokedex Pokemon sur AWS (Utilisation de service **Gratuit**
 
 - Avoir un compte [Amazon AWS](https://aws.amazon.com/fr/)
 - Avoir un utilisateur **AWS IAM** (Access key & Secret key) avec la permission (**AmazonEC2FullAccess**)
+- Avoir votre système d'exploitation sous **Linux** _(Pas obligatoire mais fortement conseillé)_
 
 ### Connexion depuis le terminal à AWS
 
     export AWS_ACCESS_KEY_ID="Votre identifiant"
     export AWS_SECRET_ACCESS_KEY="Votre clé secrète"
-
 
 ## Mise en place d'une machine virtuelle sous Ubuntu 22.04
 
@@ -38,12 +38,23 @@ Cela retournera un tableau comme ceci :
 > | ami-0b61e714d0fd856cc | ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20230428 |
 > | ami-01bfa142c445a5d49 | ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20231117 |
 
-Copié la première **ImageId** et collé la dans le fichier **main.tf**
+Copié la première **ImageId** et collé la dans le fichier **main.tf** : `ami = "ImageId"`
 
 ### Crée votre clé EC2
 
 Dans votre AWS Console aller dans EC2.
 Aller dans le menu vertical à gauche **Network & Security** -> **Key Pairs** puis cliqué sur **Create key pair**.
+Nommez votre clé et choisissez le type, **RSA** ou **ED25519** _(ED25519 uniquement pour les instances Linux et Mac)_. 
+Sélectionnez le format **.pem**, puis validez la création en cliquant sur **Create key pair**.
+
+Une nouvelle fenêtre va s'ouvrir, vous invitant à sauvegarder la clé dans votre système. 
+Placez-la dans le répertoire du projet à l'emplacement suivant : `~/Projet_DevOps/.ssh/` 
+et dans le fichier **main.tf** coller le nom ici : `key_name = "Le nom de votre clé sans l'extension"`
+
+>[!IMPORTANT]
+> Pour plus de sécurité, il est conseillé de modifier les permissions de votre clé.
+>
+>     chmod 400 ~/Projet_DevOps/.ssh/LeNomDeVotreClé.pem
 
 ### Crée un **Security Groups**
 
@@ -58,7 +69,7 @@ Pour la **Source**, sélectionnez **Anywhere-IPv4**, mais pour plus de sécurit�
 Une fois cela terminé, cliquez sur **Create security group**.
 
 Maintenant que vous avez votre **Security Group**, copiez son **Security group ID** 
-et collez-le dans le fichier **main.tf**.
+et collez-le dans le fichier **main.tf** : `vpc_security_group_ids = ["Security group ID"]`
 
 ### Exécution de Terraform
 
@@ -71,3 +82,9 @@ et collez-le dans le fichier **main.tf**.
 
 Remplire avec votre IP affiché à la suite de l'exécution de la commande terraform apply
 Remplacer aussi la position de votre fichier de clé EC2 crée plus haut
+
+
+## Vérification
+    ssh -i ~/.ssh/id_rsa ubuntu@<instance_public_ip>
+    docker --version
+
