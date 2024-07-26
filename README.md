@@ -76,15 +76,40 @@ et collez-le dans le fichier **main.tf** : `vpc_security_group_ids = ["Security 
     terraform init
     terraform apply
 
+> [!NOTE]
+> Vous devriez avoir en sortie :
+> ```
+> Outputs:
+> 
+> instance_ip = "xx.xx.xxx.xxx"
+> ```
+> Gardez l'ip pour plus tard
+
 ## Mise à jour d'Ubuntu et installation de Docker
 
-## Modifier le fichier "inventory"
+Pour mettre à jour Ubuntu et installer Docker, il faut exécuter le **playbook Ansible**. 
+Mais pour nous faciliter la tâche on va remplire un fichier **inventory**. 
 
-Remplire avec votre IP affiché à la suite de l'exécution de la commande terraform apply
-Remplacer aussi la position de votre fichier de clé EC2 crée plus haut
+> [!NOTE]
+> Un fichier d'inventaire dans Ansible est un fichier qui liste les hôtes (serveurs) sur lesquels Ansible exécutera les tâches définies dans les playbooks.
+> Il s'agit d'un élément clé de l'infrastructure d'Ansible, permettant de définir et d'organiser les groupes de serveurs.
 
+### Modifier le fichier "inventory"
+
+Remplire avec votre ip affiché à la suite de l'exécution de la commande `terraform apply` 
+Remplacer aussi la position et/ou le nom de votre fichier de clé EC2 crée plus haut.
+Le fichier **inventory** doit resembler à cela : 
+```
+[webserver]
+xx.xx.xxx.xxx ansible_user=ubuntu ansible_ssh_private_key_file=~/Projet_DevOps/.ssh/LeNomDeVotreClé.pem
+```
+
+### Exécution du playbook Ansible
+
+    ansible-playbook -i inventory playbook.yml
 
 ## Vérification
     ssh -i ~/.ssh/id_rsa ubuntu@<instance_public_ip>
     docker --version
+
 
