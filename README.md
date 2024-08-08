@@ -31,6 +31,9 @@ Lancer la commande ci-dessous pour récupérer l'ami de la version d'Ubuntu 22.0
     
 > *Canonical (distributeur de Ubuntu) id : 099720109477*
 
+> [!WARNING]
+> Pensez à changer la variable --region par la region que vous utilisé
+
 Cela retournera un tableau comme ceci :
 
 > [!TIP]
