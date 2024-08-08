@@ -1,0 +1,85 @@
+---
+- name: Configure and install Docker
+  hosts: webserver
+  become: yes
+  tasks:
+    - name: Update APT package index
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        upgrade: dist
+
+    - name: Install necessary dependencies
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update APT package index after adding Docker repo
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name: docker-ce
+        state: present
+
+    - name: Ensure Docker is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Ensure python3-pip is installed
+      ansible.builtin.apt:
+        name: python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker SDK for Python is installed
+      ansible.builtin.pip:
+        name: docker
+        state: present
+
+    - name: Ensure the app directory exists
+      ansible.builtin.file:
+        path: /home/ubuntu/app/
+        state: directory
+        mode: '0755'
+
+    - name: Copy application archive to the remote host
+      ansible.builtin.unarchive:
+        src: /home/cours/Projet_DevOps/app.tar.gz
+        dest: /home/ubuntu/app/
+        remote_src: no  # Cela indique à Ansible de transférer le fichier de la machine locale vers l'hôte distant
+
+    - name: Build Docker image from archive
+      community.docker.docker_image:
+        name: fastapi-app
+        tag: latest
+        source: build
+        build:
+          path: /home/ubuntu/app/
+
+    - name: Run Docker container
+      community.docker.docker_container:
+        name: fastapi-app-container
+        image: fastapi-app:latest
+        state: started
+        ports:
+          - "80:80"

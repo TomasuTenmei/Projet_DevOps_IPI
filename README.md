@@ -6,9 +6,12 @@ Déploiment d'un API Pokedex Pokemon sur AWS (Utilisation de service **Gratuit**
 
 ### Pré-requis
 
-- Avoir un compte [Amazon AWS](https://aws.amazon.com/fr/)
-- Avoir un utilisateur **AWS IAM** (Access key & Secret key) avec la permission (**AmazonEC2FullAccess**)
+- Avoir un compte [Amazon AWS](https://aws.amazon.com/)
+    - Avoir un utilisateur **AWS IAM** (Access key & Secret key) avec la permission (**AmazonEC2FullAccess**)
 - Avoir votre système d'exploitation sous **Linux** _(Pas obligatoire mais fortement conseillé)_
+    - Avoir [Terraform](https://www.terraform.io/) installé sur votre machine
+    - Avoir [Python 3](https://www.python.org/) installé sur votre machine
+        - Avoir le paquets Ansible d'installé `pip install ansible`
 
 ### Connexion depuis le terminal à AWS
 
@@ -54,17 +57,27 @@ et dans le fichier **main.tf** coller le nom ici : `key_name = "Le nom de votre 
 >[!IMPORTANT]
 > Pour plus de sécurité, il est conseillé de modifier les permissions de votre clé.
 >
->     chmod 400 ~/Projet_DevOps/.ssh/LeNomDeVotreClé.pem
+>     chmod 400 ~/Projet_DevOps/.ssh/<LeNomDeVotreClé.pem>
 
 ### Crée un **Security Groups**
 
 Dans votre AWS Console, allez dans EC2. 
 Dans le menu vertical à gauche, sélectionnez **Network & Security -> Security Groups** 
 puis cliquez sur **Create security group**. 
-Remplissez la section **Basic details** selon vos besoins sans modifier le **VPC**. 
-Pour les catégories **Inbound rules** et **Outbound rules**, choisissez **Type -> SSH**. 
-La partie **Protocol** et **Port range** sera automatiquement remplie. 
-Pour la **Source**, sélectionnez **Anywhere-IPv4**, mais pour plus de sécurité, préférez **My IP**.
+Remplissez la section **Basic details** comme vous le souhaitez. 
+
+Dans la section **Inbound rules** :
+- Ajouter une règle pour accéder à votre service depuis un navigateur internet avec les détails suivants :
+    - **Type** : HTTP
+    - **Protocole** : TCP
+    - **Port** : 80
+    - **Source** : Anywhere-IPv4 0.0.0.0/0 _(ou une plage d'IP spécifique si vous voulez restreindre l'accès)_
+
+- Ajouter une autre règle pour accéder à votre Ubuntu serveur depuis un CMD :
+    - **Type** -> SSH
+    - **Protocole** : TCP _(automatiquement remplie)_
+    - **Port** : 22 _(automatiquement remplie)_
+    - **Source** : Anywhere-IPv4 0.0.0.0/0 _(pour plus de sécurité, préférez My IP avec votre IP)_
 
 Une fois cela terminé, cliquez sur **Create security group**.
 
@@ -101,15 +114,43 @@ Remplacer aussi la position et/ou le nom de votre fichier de clé EC2 crée plus
 Le fichier **inventory** doit resembler à cela : 
 ```
 [webserver]
-xx.xx.xxx.xxx ansible_user=ubuntu ansible_ssh_private_key_file=~/Projet_DevOps/.ssh/LeNomDeVotreClé.pem
+<instance_ip> ansible_user=ubuntu ansible_ssh_private_key_file=~/Projet_DevOps/.ssh/<LeNomDeVotreClé.pem>
 ```
 
+### Création de l'archive de l'application
+
+Pour déployer l'application sur le serveur, vous devez d'abord créer une archive de celle-ci à l'aide de Docker.
+
+Commencez par vous rendre dans le répertoire de l'application :
+
+    cd app
+
+Ensuite, exécutez la commande suivante pour créer une archive locale de l'application :
+
+    tar -czvf ../app.tar.gz *
+
+Maintenant que l'archive est créée, vous devez vérifier que le chemin dans le fichier **playbook.yml** pointe bien vers l'archive qui sera copiée sur le serveur. 
+
+Pour ce faire, retournez dans le répertoire principal du projet :
+
+    cd ../
+
+Lancez ensuite la commande suivante :
+
+    realpath app.tar.gz
+
+Cette commande vous retournera le chemin complet de l'archive. Ouvrez le fichier **playbook.yml** et vérifiez que la variable src dans l'action intitulée **Copy application archive to the remote host** correspond bien au chemin renvoyé par la commande précédente.
+
 ### Exécution du playbook Ansible
+
+Installez la collection **community.docker**:
+
+    ansible-galaxy collection install community.docker
+
+Puis, exécutez le playbook Ansible :
 
     ansible-playbook -i inventory playbook.yml
 
 ## Vérification
-    ssh -i ~/.ssh/id_rsa ubuntu@<instance_public_ip>
-    docker --version
 
-
+Si tout fonctionne correctement, vous devriez pouvoir accéder à la page principale de l'application en entrant l'adresse IP de votre instance `<instance_ip>` dans un navigateur web.
